@@ -1,6 +1,8 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { apiRequest } from '@/utils/api';
+import { setItem } from '@/utils/storageService';
 
 export default function RegisterPage() {
   const [form, setForm] = useState({
@@ -15,68 +17,83 @@ export default function RegisterPage() {
   });
 
   const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
-const handleChange = (e) =>
+  useEffect(() => {
+    const existingUser = localStorage.getItem('user');
+    if (existingUser) router.push('/dashboard');
+  }, []);
+
+  const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+  };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  try {
-    await apiRequest('/users/register', 'POST', form);
-    setMessage('Registered successfully');
-  } catch (err) {
-    setMessage(err.message);
-  }
-};
+    e.preventDefault();
+    setLoading(true);
+    setMessage('');
 
-
-  const fields = [
-    { name: 'name', label: 'Full Name' },
-    { name: 'email', label: 'Email Address' },
-    { name: 'password', label: 'Password', type: 'password' },
-    { name: 'phone', label: 'Phone Number' },
-    { name: 'city', label: 'City' },
-    { name: 'age', label: 'Age' },
-    { name: 'role', label: 'Role' },
-    { name: 'bio', label: 'Short Bio' },
-  ];
+    try {
+      const data = await apiRequest('/users/register', 'POST', form);
+      setItem('user', data);
+      setMessage('Registered successfully!');
+      router.push('/dashboard');
+    } catch (err) {
+      console.error('Register error:', err.message);
+      setMessage(err.message || 'Registration failed');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <main className="max-w-lg mx-auto mt-10 p-6 shadow-lg rounded-xl bg-white dark:bg-gray-800 dark:text-white">
-      <h2 className="text-2xl font-bold mb-6 text-center">Register</h2>
+    <main className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 via-white to-green-100 dark:from-gray-900 dark:to-gray-800 p-6">
+      <div className="w-full max-w-xl bg-white dark:bg-gray-900 shadow-xl rounded-xl p-8 border dark:border-gray-700">
+        <h2 className="text-3xl font-bold text-green-700 dark:text-green-300 mb-6 text-center">
+          Register Account
+        </h2>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {fields.map(({ name, label, type }) => (
-          <div key={name} className="flex flex-col">
-            <label htmlFor={name} className="mb-1 font-medium text-gray-700 dark:text-gray-200">
-              {label}
-            </label>
-            <input
-              id={name}
-              name={name}
-              type={type || 'text'}
-              placeholder={label}
-              className="p-2 border border-gray-300 rounded dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={form[name]}
-              onChange={handleChange}
-              required
-            />
-          </div>
-        ))}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {[
+            ['name', 'Name'],
+            ['email', 'Email'],
+            ['password', 'Password'],
+            ['phone', 'Phone'],
+            ['city', 'City'],
+            ['age', 'Age'],
+            ['role', 'Role'],
+            ['bio', 'Bio'],
+          ].map(([field, label]) => (
+            <div key={field}>
+              <label className="block text-sm font-medium mb-1 dark:text-white">{label}</label>
+              <input
+                type={field === 'password' ? 'password' : 'text'}
+                name={field}
+                value={form[field]}
+                onChange={handleChange}
+                placeholder={`Enter ${label}`}
+                className="w-full px-4 py-2 rounded-lg border dark:border-gray-600 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                required={['name', 'email', 'password'].includes(field)}
+              />
+            </div>
+          ))}
 
-        <button
-          type="submit"
-          className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded transition duration-300"
-        >
-          Register
-        </button>
-      </form>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition disabled:opacity-50"
+          >
+            {loading ? 'Registering...' : 'Register'}
+          </button>
+        </form>
 
-      {message && (
-        <p className="mt-4 text-center text-sm font-medium text-red-600 dark:text-red-400">
-          {message}
-        </p>
-      )}
+        {message && (
+          <p className="mt-4 text-center text-red-500 dark:text-red-400 font-medium">
+            {message}
+          </p>
+        )}
+      </div>
     </main>
   );
 }

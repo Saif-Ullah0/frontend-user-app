@@ -1,103 +1,61 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { getItem, removeItem } from '@/utils/storageService';
 
 export default function Navbar() {
   const pathname = usePathname();
-  const isActive = (path) => pathname === path;
-
+  const router = useRouter();
   const [user, setUser] = useState(null);
 
-  // Sync with localStorage changes
+  const isActive = (path) => pathname === path;
+
+  // Load user from localStorage on mount and pathname change
   useEffect(() => {
-    const updateUser = () => {
-      const stored = localStorage.getItem('user');
-      setUser(stored ? JSON.parse(stored) : null);
-    };
-
-    updateUser();
-
-    // Listen for localStorage changes
-    window.addEventListener('storage', updateUser);
-    return () => window.removeEventListener('storage', updateUser);
-  }, []);
-
-  // Also update on client-side route change
-  useEffect(() => {
-    const stored = localStorage.getItem('user');
-    setUser(stored ? JSON.parse(stored) : null);
+    const storedUser = getItem('user');
+    setUser(storedUser);
   }, [pathname]);
 
   const handleLogout = () => {
-    localStorage.removeItem('user');
+    removeItem('user');
     setUser(null);
-    window.location.href = '/login';
+    router.push('/login');
   };
 
   return (
-    <nav className="bg-blue-600 dark:bg-gray-900 text-white shadow-md">
-      <div className="max-w-6xl mx-auto flex items-center justify-between p-4">
-        <Link href="/" className="text-xl font-bold hover:text-yellow-300">
-          MyApp
-        </Link>
-
-        <ul className="flex gap-6 items-center text-sm">
+    <nav className="bg-blue-600 text-white p-4 shadow-md">
+      <div className="container mx-auto flex justify-between items-center">
+        <h1 className="text-lg font-bold">
+          <Link href="/">MyApp</Link>
+        </h1>
+        <ul className="flex gap-6">
           <li>
-            <Link
-              href="/"
-              className={`hover:text-yellow-300 ${isActive('/') ? 'underline font-semibold' : ''}`}
-            >
-              Home
-            </Link>
+            <Link href="/" className={isActive('/') ? 'underline font-semibold' : ''}>Home</Link>
           </li>
 
-          {!user ? (
+          {user ? (
             <>
               <li>
-                <Link
-                  href="/login"
-                  className={`hover:text-yellow-300 ${isActive('/login') ? 'underline font-semibold' : ''}`}
-                >
-                  Login
-                </Link>
+                <Link href="/dashboard" className={isActive('/dashboard') ? 'underline font-semibold' : ''}>Dashboard</Link>
               </li>
               <li>
-                <Link
-                  href="/register"
-                  className={`hover:text-yellow-300 ${isActive('/register') ? 'underline font-semibold' : ''}`}
-                >
-                  Register
-                </Link>
+                <Link href="/users" className={isActive('/users') ? 'underline font-semibold' : ''}>Users</Link>
+              </li>
+              <li>
+                <span className="cursor-pointer hover:underline" onClick={handleLogout}>
+                  Logout
+                </span>
               </li>
             </>
           ) : (
             <>
               <li>
-                <Link
-                  href="/dashboard"
-                  className={`hover:text-yellow-300 ${isActive('/dashboard') ? 'underline font-semibold' : ''}`}
-                >
-                  Dashboard
-                </Link>
+                <Link href="/login" className={isActive('/login') ? 'underline font-semibold' : ''}>Login</Link>
               </li>
               <li>
-                <Link
-                  href="/users"
-                  className={`hover:text-yellow-300 ${isActive('/users') ? 'underline font-semibold' : ''}`}
-                >
-                  Users
-                </Link>
-              </li>
-              <li className="text-gray-200 hidden sm:inline">Hi, {user.name}</li>
-              <li>
-                <button
-                  onClick={handleLogout}
-                  className="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-white"
-                >
-                  Logout
-                </button>
+                <Link href="/register" className={isActive('/register') ? 'underline font-semibold' : ''}>Register</Link>
               </li>
             </>
           )}

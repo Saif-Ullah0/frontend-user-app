@@ -2,66 +2,59 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiRequest } from '@/utils/api';
-
-
+import { setItem } from '@/utils/storageService';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
-  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     const existingUser = localStorage.getItem('user');
-    if (existingUser) {
-      router.push('/dashboard'); 
-    }
+    if (existingUser) router.push('/dashboard');
   }, []);
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  try {
-    const data = await apiRequest('/users/login', 'POST', { email, password });
-    setMessage(`Welcome, ${data.name}`);
-    localStorage.setItem('user', JSON.stringify(data));
-  } catch (err) {
-    console.error('Login error:', err.message);
-    setMessage(err.message);
-  }
-};
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const data = await apiRequest('/users/login', 'POST', { email, password });
+      setMessage(`Welcome, ${data.name}`);
+      setItem('user', data);
+      router.push('/dashboard');
+    } catch (err) {
+      setMessage(err.message || 'Login failed');
+    }
+  };
 
   return (
-    <main className="max-w-md mx-auto mt-10 p-6 bg-white dark:bg-gray-900 shadow-lg rounded-xl">
-      <h2 className="text-2xl font-bold text-center mb-6 text-gray-800 dark:text-white">Login to Your Account</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <input
-          type="email"
-          placeholder="Email"
-          className="w-full p-3 border rounded focus:outline-none focus:ring focus:border-blue-500 dark:bg-gray-800 dark:text-white"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          className="w-full p-3 border rounded focus:outline-none focus:ring focus:border-blue-500 dark:bg-gray-800 dark:text-white"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded disabled:opacity-50"
-        >
-          {loading ? 'Logging in...' : 'Login'}
-        </button>
-      </form>
-      {message && (
-        <p className="mt-4 text-center text-sm font-medium text-red-600 dark:text-red-400">
-          {message}
-        </p>
-      )}
+    <main className="min-h-screen bg-gradient-to-tr from-indigo-200 to-purple-200 flex justify-center items-center p-4">
+      <div className="bg-white w-full max-w-md p-6 rounded-xl shadow-md">
+        <h2 className="text-2xl font-bold text-center mb-4 text-indigo-600">Login to Your Account</h2>
+        {message && <p className="text-red-600 text-sm text-center mb-2">{message}</p>}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full p-3 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            required
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full p-3 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            required
+          />
+          <button className="w-full bg-indigo-600 text-white py-3 rounded hover:bg-indigo-700 transition">
+            Login
+          </button>
+        </form>
+      </div>
     </main>
   );
 }
